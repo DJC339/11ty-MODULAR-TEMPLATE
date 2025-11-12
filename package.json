@@ -4,6 +4,7 @@
   "private": true,
   "description": "Modular Eleventy starter with layouts, components, and assets.",
   "scripts": {
+    "start": "npm run dev",
     "dev": "eleventy --serve",
     "build": "eleventy"
   },
@@ -14,4 +15,3 @@
     "@11ty/eleventy": "^2.0.1"
   }
 }
-

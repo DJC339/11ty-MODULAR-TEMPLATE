@@ -1,7 +1,6 @@
 <div class="site-footer">
   <div>
-    <small>&copy; {{ (site && site.title) or "Site" }} — {{ "now" | date("yyyy") }}</small>
+    <small>&copy; {{ (site and site.title) or "Site" }}</small>
   </div>
   {% include "partials/social-links.html" %}
 </div>
-
