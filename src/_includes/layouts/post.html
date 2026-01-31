@@ -2,10 +2,11 @@
 layout: layouts/base.html
 contentWrapperClass: ""
 ---
-<article class="prose prose-invert prose-a:text-sky-400">
+{% set isLight = site.theme == "light" %}
+<article class="{{ isLight and 'prose prose-headings:tracking-tight prose-a:text-sky-700 prose-blockquote:text-slate-700 prose-strong:text-slate-900' or 'prose prose-invert prose-a:text-sky-400 prose-blockquote:text-slate-200 prose-strong:text-white' }}">
   <h1 class="mb-2 text-4xl font-semibold tracking-tight">{{ title }}</h1>
   {% if date %}
-    <p class="text-sm uppercase tracking-wide text-slate-400">{{ date | date("yyyy-LL-dd") }}</p>
+    <p class="text-sm uppercase tracking-wide {{ isLight and 'text-slate-600' or 'text-slate-400' }}">{{ date | date("yyyy-LL-dd") }}</p>
   {% endif %}
   {{ content | safe }}
 </article>

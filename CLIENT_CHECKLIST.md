@@ -3,7 +3,7 @@
 Use this list after copying the template into a new client folder.
 
 ## Required
-- Update site metadata in `src/_data/global.json`
+- Update site metadata in `src/_data/site.json`
   - `title`, `description`, `author`, `url`, `language`, `twitter`, `image`
   - Set `theme` to `light` or `dark`
 - Set Cloudinary config

@@ -30,7 +30,7 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
 |-- postcss.config.js          # Tailwind + Autoprefixer
 |-- src/
 |   |-- _data/
-|   |   |-- global.json        # Site title/description/author/url/language/twitter/image
+|   |   |-- site.json          # Site title/description/author/url/language/twitter/image
 |   |   |-- navigation.js      # Header nav links
 |   |-- _includes/
 |   |   |-- layouts/
@@ -94,7 +94,7 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
   - Canonical URL
   - Open Graph: site_name, title, description, url, type (article for blog), image
   - Twitter Card: `summary_large_image`, site handle, title, description, image
-- Global settings in `src/_data/global.json`:
+- Global settings in `src/_data/site.json`:
   - `title`, `description`, `author`, `url`, `language`, `twitter`, `image` (full URL, optional), `theme` (`dark` or `light`)
 - Extras:
   - `src/pages/sitemap.xml.html` → `/sitemap.xml`
@@ -126,7 +126,7 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
 
 ## Things To Do After Cloning
 1) Update site metadata
-   - `src/_data/global.json` — title, description, author, url, language, twitter, image
+   - `src/_data/site.json` — title, description, author, url, language, twitter, image
 2) Tweak navigation
    - `src/_data/navigation.js` — add/remove links (e.g., Contact)
 3) Branding and SEO

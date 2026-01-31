@@ -27,9 +27,22 @@
     @apply text-sky-300;
   }
 
+  html[data-theme="light"] a {
+    @apply text-sky-700;
+  }
+
+  html[data-theme="light"] a:hover {
+    @apply text-sky-600;
+  }
+
   a:focus-visible,
   button:focus-visible {
     @apply outline-none ring-2 ring-offset-2 ring-offset-slate-900 ring-sky-400;
+  }
+
+  html[data-theme="light"] a:focus-visible,
+  html[data-theme="light"] button:focus-visible {
+    @apply ring-offset-white ring-sky-500;
   }
 
   a,
@@ -41,6 +54,10 @@
 @layer components {
   .skip-link {
     @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:px-4 focus:py-2 focus:bg-slate-900 focus:text-white focus:rounded-md focus:ring-2 focus:ring-sky-400;
+  }
+
+  html[data-theme="light"] .skip-link {
+    @apply focus:bg-white focus:text-slate-900 focus:ring-sky-500;
   }
 }
 

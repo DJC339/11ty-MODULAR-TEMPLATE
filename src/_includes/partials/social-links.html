@@ -1,5 +1,6 @@
-<div class="flex flex-wrap gap-4 text-slate-400">
-  <a class="transition-colors hover:text-sky-300" href="#" aria-label="Twitter">Twitter</a>
-  <a class="transition-colors hover:text-sky-300" href="#" aria-label="GitHub">GitHub</a>
-  <a class="transition-colors hover:text-sky-300" href="#" aria-label="LinkedIn">LinkedIn</a>
+{% set isLight = site.theme == "light" %}
+<div class="flex flex-wrap gap-4 {{ isLight and 'text-slate-600' or 'text-slate-400' }}">
+  <a class="transition-colors {{ isLight and 'hover:text-sky-700' or 'hover:text-sky-300' }}" href="#" aria-label="Twitter">Twitter</a>
+  <a class="transition-colors {{ isLight and 'hover:text-sky-700' or 'hover:text-sky-300' }}" href="#" aria-label="GitHub">GitHub</a>
+  <a class="transition-colors {{ isLight and 'hover:text-sky-700' or 'hover:text-sky-300' }}" href="#" aria-label="LinkedIn">LinkedIn</a>
 </div>
