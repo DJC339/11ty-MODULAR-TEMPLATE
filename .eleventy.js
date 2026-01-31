@@ -1,6 +1,9 @@
 const path = require("path");
 const Image = require("@11ty/eleventy-img");
 
+const USE_CLOUDINARY = process.env.USE_CLOUDINARY !== "false";
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+
 const DEFAULT_DATE_STYLE = Object.freeze({ dateStyle: "medium" });
 const pad2 = (n) => String(n).padStart(2, "0");
 const LEGACY_DATE_FORMATTERS = Object.freeze({
@@ -65,6 +68,23 @@ module.exports = function (eleventyConfig) {
       formats = ["avif", "webp", "jpeg"],
       className = ""
     ) {
+      if (USE_CLOUDINARY && CLOUDINARY_CLOUD_NAME) {
+        return generateCloudinaryPicture({
+          publicId: src,
+          alt,
+          sizes,
+          widths,
+          formats,
+          className,
+        });
+      }
+
+      if (USE_CLOUDINARY && !CLOUDINARY_CLOUD_NAME) {
+        console.warn(
+          "[img shortcode] USE_CLOUDINARY is true but CLOUDINARY_CLOUD_NAME is not set. Falling back to local images."
+        );
+      }
+
       const inputDir = "src"; // matches dir.input below
       const rel = String(src).replace(/^\//, "");
       const fullSrc = path.join(inputDir, rel);
@@ -222,4 +242,55 @@ function hardenExternalLinks(html) {
     REL_ATTRIBUTE_REGEX.lastIndex = 0;
     return match.replace(REL_ATTRIBUTE_REGEX, ` rel=${quote}${mergedRel}${quote}`);
   });
+}
+
+function normalizeCloudinaryPublicId(publicId) {
+  if (!publicId) return "";
+  return String(publicId).replace(/^\//, "");
+}
+
+function buildCloudinaryUrl({ publicId, width, format }) {
+  const cleanId = normalizeCloudinaryPublicId(publicId);
+  const transforms = [
+    "q_auto",
+    width ? `w_${width}` : null,
+    format ? `f_${format}` : "f_auto",
+  ]
+    .filter(Boolean)
+    .join(",");
+
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${transforms}/${cleanId}`;
+}
+
+function generateCloudinaryPicture({ publicId, alt, sizes, widths, formats, className }) {
+  const cleanAlt = alt || "";
+  const formatList = Array.isArray(formats) && formats.length > 0 ? formats : ["auto"];
+  const widthList = Array.isArray(widths) && widths.length > 0 ? widths : [640, 960, 1280];
+
+  const sources = formatList
+    .filter((format) => format !== "jpeg")
+    .map((format) => {
+      const srcset = widthList
+        .map((width) => `${buildCloudinaryUrl({ publicId, width, format })} ${width}w`)
+        .join(", ");
+      return `<source type="image/${format}" srcset="${srcset}" sizes="${sizes}">`;
+    })
+    .join("");
+
+  const fallbackSrcset = widthList
+    .map((width) => `${buildCloudinaryUrl({ publicId, width, format: "jpeg" })} ${width}w`)
+    .join(", ");
+  const fallbackSrc = buildCloudinaryUrl({ publicId, width: widthList[0], format: "jpeg" });
+  const classAttr = className ? ` class="${className}"` : "";
+
+  return `<picture>${sources}<img${classAttr} src="${fallbackSrc}" srcset="${fallbackSrcset}" sizes="${sizes}" alt="${escapeHtml(cleanAlt)}" loading="lazy" decoding="async"></picture>`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

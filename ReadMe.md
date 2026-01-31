@@ -12,6 +12,7 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
 - 404 page (`/404.html`)
 - SEO: canonical URLs, Open Graph + Twitter Card tags, sitemap.xml, robots.txt
 - Images: responsive `<picture>` via `{% img %}` shortcode, Markdown images lazy/async
+- Cloudinary-first image pipeline with local fallback via `USE_CLOUDINARY=false`
 - Tailwind CSS 3 + Autoprefixer with dedicated dev/build scripts (typography plugin included)
 - Netlify config (`netlify.toml`) with cache and strong security headers
 - External link hardening (`rel="noopener noreferrer"` for `target="_blank"`)
@@ -63,6 +64,7 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
 ```
 ## Getting Started
 - Install: `npm install`
+- Configure environment: copy `.env.example` to `.env` and set `CLOUDINARY_CLOUD_NAME`
 - Develop: `npm start` (or `npm run dev`) - runs Eleventy serve alongside the Tailwind watcher
 - Build: `npm run build` - runs `build:css` before Eleventy and outputs to `_site/`
 - CSS only: `npm run dev:css` (watch) or `npm run build:css` (single build)
@@ -78,8 +80,10 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
     - `{{ date | date('en-GB','long') }}` → en-GB, long date
     - `{{ date | date('en-US', { dateStyle: 'medium', timeStyle: 'short' }) }}`
 - Responsive images: `{% img src, alt, sizes %}`
-  - Emits AVIF/WebP/JPEG at multiple widths with lazy-loading and async decoding
-  - Example: `{% img '/assets/images/example.jpg', 'Alt text', '(min-width: 768px) 720px, 100vw' %}`
+  - Default: Cloudinary URLs with AVIF/WebP/JPEG sources at multiple widths
+  - Local fallback: set `USE_CLOUDINARY=false` to use `@11ty/eleventy-img`
+  - Example (Cloudinary public ID): `{% img 'site/hero', 'Alt text', '(min-width: 768px) 720px, 100vw' %}`
+  - Example (local file): `{% img '/assets/images/example.jpg', 'Alt text', '(min-width: 768px) 720px, 100vw' %}`
 - Markdown images: automatically get `loading="lazy" decoding="async"`
 - Security transform: adds `rel="noopener noreferrer"` to links with `target="_blank"`
 - Filters: `absoluteUrl(path, base)`, `w3cDate(value)` used by SEO and sitemap
@@ -91,7 +95,7 @@ An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts
   - Open Graph: site_name, title, description, url, type (article for blog), image
   - Twitter Card: `summary_large_image`, site handle, title, description, image
 - Global settings in `src/_data/global.json`:
-  - `title`, `description`, `author`, `url`, `language`, `twitter`, `image`
+  - `title`, `description`, `author`, `url`, `language`, `twitter`, `image` (full URL, optional), `theme` (`dark` or `light`)
 - Extras:
   - `src/pages/sitemap.xml.html` → `/sitemap.xml`
   - `src/pages/robots.txt` → `/robots.txt` with sitemap pointer

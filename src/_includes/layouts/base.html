@@ -1,19 +1,25 @@
+{% set theme = site.theme or "dark" %}
+{% set isLight = theme == "light" %}
 <!doctype html>
-<html lang="{{ site.language or 'en' }}">
+<html lang="{{ site.language or 'en' }}" data-theme="{{ theme }}">
   <head>
     {% include "components/basehead.html" %}
   </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased">
+  <body class="{{ isLight and 'bg-white text-slate-900' or 'bg-slate-950 text-slate-100' }} font-sans antialiased">
     <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="flex min-h-screen flex-col">
-    <header class="border-b border-slate-800 bg-slate-900/40 backdrop-blur-sm">
+    <header class="{{ isLight and 'border-b border-slate-200 bg-white/70' or 'border-b border-slate-800 bg-slate-900/40' }} backdrop-blur-sm">
       {% include "components/header.html" %}
     </header>
 
     {% if contentWrapperClass is defined %}
       {% set wrapperClass = contentWrapperClass %}
     {% else %}
-      {% set wrapperClass = "prose prose-invert prose-headings:tracking-tight prose-a:text-sky-400 prose-blockquote:text-slate-200 prose-strong:text-white" %}
+      {% if isLight %}
+        {% set wrapperClass = "prose prose-headings:tracking-tight prose-a:text-sky-700 prose-blockquote:text-slate-700 prose-strong:text-slate-900" %}
+      {% else %}
+        {% set wrapperClass = "prose prose-invert prose-headings:tracking-tight prose-a:text-sky-400 prose-blockquote:text-slate-200 prose-strong:text-white" %}
+      {% endif %}
     {% endif %}
     <main id="main-content" class="mx-auto flex-1 w-full max-w-3xl px-6 py-10">
       {% if wrapperClass %}
@@ -25,7 +31,7 @@
       {% endif %}
     </main>
 
-    <footer class="border-t border-slate-800 px-6 py-8">
+    <footer class="{{ isLight and 'border-t border-slate-200' or 'border-t border-slate-800' }} px-6 py-8">
       {% include "components/footer.html" %}
     </footer>
     </div>

@@ -6,6 +6,7 @@
     "url": "https://example.com",
     "language": "en",
     "twitter": "@yourhandle",
-    "image": "/assets/images/social-share.jpg"
+    "image": "",
+    "theme": "dark"
   }
 }

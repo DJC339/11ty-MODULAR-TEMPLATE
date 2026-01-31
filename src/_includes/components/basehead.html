@@ -19,8 +19,10 @@
 {% endif %}
 {% set isArticle = (tags and ("blog" in tags)) or (page and page.url and page.url.startsWith('/blog/')) %}
 <meta property="og:type" content="{{ isArticle and 'article' or 'website' }}" />
+{% set ogImage = "" %}
 {% if site.image %}
-  <meta property="og:image" content="{{ site.image | absoluteUrl(site.url) }}" />
+  {% set ogImage = site.image.startsWith('http') and site.image or (site.image | absoluteUrl(site.url)) %}
+  <meta property="og:image" content="{{ ogImage }}" />
 {% endif %}
 
 {# Twitter Card #}
@@ -29,5 +31,5 @@
 <meta name="twitter:title" content="{{ title or site.title }}" />
 <meta name="twitter:description" content="{{ description or site.description }}" />
 {% if site.image %}
-  <meta name="twitter:image" content="{{ site.image | absoluteUrl(site.url) }}" />
+  <meta name="twitter:image" content="{{ ogImage }}" />
 {% endif %}

@@ -1,11 +1,12 @@
+{% set isLight = site.theme == "light" %}
 <nav class="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-y-2 gap-x-6 px-6 py-4">
-  <a class="text-lg font-semibold tracking-tight text-white" href="/">{{ site.title }}</a>
+  <a class="text-lg font-semibold tracking-tight {{ isLight and 'text-slate-900' or 'text-white' }}" href="/">{{ site.title }}</a>
   <ul class="flex list-none flex-wrap gap-4 p-0 text-sm">
     {% for item in navigation %}
       {% set isActive = page and page.url and page.url == item.url %}
       <li>
         <a
-          class="text-slate-400 transition-colors hover:text-sky-300 {% if isActive %}font-semibold text-sky-400{% endif %}"
+          class="{{ isLight and 'text-slate-600 hover:text-sky-700' or 'text-slate-400 hover:text-sky-300' }} transition-colors {% if isActive %}font-semibold {{ isLight and 'text-sky-700' or 'text-sky-400' }}{% endif %}"
           href="{{ item.url }}"
           {% if isActive %}aria-current="page"{% endif %}
         >
