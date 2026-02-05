@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
-    "@11ty/eleventy-img": "^3.0.1",
+    "@11ty/eleventy-img": "^6.0.4",
     "@tailwindcss/typography": "0.5.19",
     "autoprefixer": "10.4.22",
     "concurrently": "9.2.1",
