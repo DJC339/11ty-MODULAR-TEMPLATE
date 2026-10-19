@@ -1,4 +1,5 @@
 ---
+placeholder: true
 layout: layouts/post.html
 title: First Post
 date: 2024-01-15

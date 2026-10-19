@@ -1,6 +1,19 @@
 ---
 layout: layouts/base.html
-title: Contact Us
+title: Contact
+description: Contact the business with a question or project inquiry.
 permalink: /contact/
+placeholder: true
 ---
-<h1>Contact Us</h1>
+<h1>Contact</h1>
+{% if site.contactEnabled %}
+<p id="form-help">All fields are required. Please do not include sensitive personal information.</p>
+<form class="form" method="POST" action="/api/contact" aria-describedby="form-help">
+<p><label for="name">Name</label><input id="name" name="name" autocomplete="name" required minlength="{{ formRules.name.min }}" maxlength="{{ formRules.name.max }}"></p>
+<p><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="{{ formRules.email.max }}"></p>
+<p><label for="message">Message</label><textarea id="message" name="message" required minlength="{{ formRules.message.min }}" maxlength="{{ formRules.message.max }}"></textarea></p>
+<div class="trap" aria-hidden="true"><label for="website">Leave this field empty</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+<button type="submit">Send message</button>
+</form>
+{% else %}<p>Contact form setup is pending. Add your approved contact details and enable the form after configuring hosting.</p>{% endif %}
+{% if site.email %}<p>Email: <a href="mailto:{{ site.email }}">{{ site.email }}</a></p>{% endif %}

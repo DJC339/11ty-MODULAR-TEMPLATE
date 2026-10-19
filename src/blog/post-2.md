@@ -1,4 +1,5 @@
 ---
+placeholder: true
 layout: layouts/post.html
 title: Second Post
 date: 2024-02-10

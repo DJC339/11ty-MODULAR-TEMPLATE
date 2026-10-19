@@ -1,9 +1,11 @@
 node_modules/
 _site/
+.env
+.env.*
+!.env.example
+.cache/
+test-results/
+playwright-report/
 .DS_Store
 Thumbs.db
-.env
 npm-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-src/assets/css/main.css
