@@ -1,7 +1,6 @@
-{% set isLight = site.theme == "light" %}
-<div class="flex flex-col gap-4 text-sm {{ isLight and 'text-slate-600' or 'text-slate-400' }} md:flex-row md:items-center md:justify-between">
-  <div>
-    <small class="text-xs font-medium uppercase tracking-wide {{ isLight and 'text-slate-500' or 'text-slate-500' }}">&copy; {{ (site and site.title) or "Site" }}</small>
-  </div>
-  {% include "partials/social-links.html" %}
+<div class="container">
+  <p>&copy; {{ site.year }} {{ site.title }}</p>
+  <nav aria-label="Footer navigation"><ul>{% for item in navigation %}<li><a href="{{ item.url }}">{{ item.title }}</a></li>{% endfor %}</ul></nav>
+  {% if site.email %}<p><a href="mailto:{{ site.email }}">{{ site.email }}</a></p>{% endif %}
+  {% if site.telephone %}<p><a href="tel:{{ site.telephone }}">{{ site.telephone }}</a></p>{% endif %}
 </div>

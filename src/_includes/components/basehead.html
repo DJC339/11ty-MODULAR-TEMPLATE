@@ -1,35 +1,24 @@
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>{{ title or site.title }}</title>
-<meta name="description" content="{{ description or site.description }}" />
-{% if noindex %}<meta name="robots" content="noindex" />{% endif %}
-<link rel="stylesheet" href="/assets/css/main.css" />
-
-{# Canonical URL #}
-{% if site.url and page and page.url %}
-  <link rel="canonical" href="{{ page.url | absoluteUrl(site.url) }}" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}{% if title %} | {% endif %}{{ site.title }}</title>
+<meta name="description" content="{{ description or site.description }}">
+{% if not site.indexable or noindex or placeholder or draft %}<meta name="robots" content="noindex">{% endif %}
+<link rel="stylesheet" href="{{ 'css' | asset }}">
+<link rel="icon" href="/assets/public/favicon.svg" type="image/svg+xml">
+<script src="{{ 'js' | asset }}" defer></script>
+{% if site.url and not noindex and not placeholder and not draft %}<link rel="canonical" href="{{ page.url | absoluteUrl(site.url) }}">{% endif %}
+<meta property="og:type" content="{{ 'article' if article else 'website' }}">
+<meta property="og:site_name" content="{{ site.title }}">
+<meta property="og:title" content="{{ title or site.title }}">
+<meta property="og:description" content="{{ description or site.description }}">
+{% if site.url %}<meta property="og:url" content="{{ page.url | absoluteUrl(site.url) }}">{% endif %}
+<meta name="twitter:card" content="{{ 'summary_large_image' if site.image else 'summary' }}">
+<meta name="twitter:title" content="{{ title or site.title }}">
+<meta name="twitter:description" content="{{ description or site.description }}">
+{% if site.image and site.url %}
+<meta property="og:image" content="{{ site.image | absoluteUrl(site.url) }}">
+<meta property="og:image:alt" content="{{ site.imageAlt }}">
+<meta name="twitter:image" content="{{ site.image | absoluteUrl(site.url) }}">
+<meta name="twitter:image:alt" content="{{ site.imageAlt }}">
 {% endif %}
-
-{# Open Graph #}
-<meta property="og:site_name" content="{{ site.title }}" />
-<meta property="og:title" content="{{ title or site.title }}" />
-<meta property="og:description" content="{{ description or site.description }}" />
-{% if site.url and page and page.url %}
-  <meta property="og:url" content="{{ page.url | absoluteUrl(site.url) }}" />
-{% endif %}
-{% set isArticle = (tags and ("blog" in tags)) or (page and page.url and page.url.startsWith('/blog/')) %}
-<meta property="og:type" content="{{ isArticle and 'article' or 'website' }}" />
-{% set ogImage = "" %}
-{% if site.image %}
-  {% set ogImage = site.image.startsWith('http') and site.image or (site.image | absoluteUrl(site.url)) %}
-  <meta property="og:image" content="{{ ogImage }}" />
-{% endif %}
-
-{# Twitter Card #}
-<meta name="twitter:card" content="summary_large_image" />
-{% if site.twitter %}<meta name="twitter:site" content="{{ site.twitter }}" />{% endif %}
-<meta name="twitter:title" content="{{ title or site.title }}" />
-<meta name="twitter:description" content="{{ description or site.description }}" />
-{% if site.image %}
-  <meta name="twitter:image" content="{{ ogImage }}" />
-{% endif %}
+{% if site.business and site.url %}<script type="application/ld+json">{{ site.business | jsonForHtml | safe }}</script>{% endif %}

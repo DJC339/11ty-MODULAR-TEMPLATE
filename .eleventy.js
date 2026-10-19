@@ -1,296 +1,82 @@
-const path = require("path");
-const Image = require("@11ty/eleventy-img");
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { globSync } from 'node:fs';
+import postcss from 'postcss';
+import tailwind from '@tailwindcss/postcss';
+import Image from '@11ty/eleventy-img';
+import { load } from 'cheerio';
+import { siteConfig, jsonForHtml } from './lib/site-config.mjs';
+import { SECURITY_HEADERS } from './lib/security.mjs';
 
-const USE_CLOUDINARY = process.env.USE_CLOUDINARY !== "false";
-const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-
-const DEFAULT_DATE_STYLE = Object.freeze({ dateStyle: "medium" });
-const pad2 = (n) => String(n).padStart(2, "0");
-const LEGACY_DATE_FORMATTERS = Object.freeze({
-  "yyyy-LL-dd": (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`,
-  "yyyy-LL": (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`,
-  "LL/dd/yyyy": (date) => `${pad2(date.getMonth() + 1)}/${pad2(date.getDate())}/${date.getFullYear()}`,
-});
-const formatterCache = new Map();
-const TARGET_BLANK_REGEX = /<a([^>]*?)target=("|')_blank\2([^>]*)>/gi;
-const REL_ATTRIBUTE_REGEX = /\srel=("|')(.*?)\1/i;
-
-module.exports = function (eleventyConfig) {
-  // Copy assets to the output as-is
-  eleventyConfig.addPassthroughCopy({ "src/assets": "assets" });
-
-  // Internationalized date filter using Intl.DateTimeFormat
-  // Usage examples (Nunjucks):
-  //   {{ date | date() }}                         -> system locale, medium date
-  //   {{ date | date('auto','long') }}           -> system locale, long date
-  //   {{ date | date('en-GB','medium') }}        -> en-GB locale, medium date
-  //   {{ date | date('fr-FR', { dateStyle: 'full' }) }}
-  //   {{ date | date('en-US', { dateStyle: 'medium', timeStyle: 'short' }) }}
-  // Back-compat: if first arg is 'yyyy-LL-dd' | 'yyyy-LL' | 'LL/dd/yyyy',
-  // it formats using those tokens to avoid breaking existing templates.
-  eleventyConfig.addFilter("date", (value, localeOrFormat = "auto", styleOrOptions) => {
-    const date = coerceDate(value);
-    if (!date) return "";
-
-    const legacyFormatted = formatLegacyDate(date, localeOrFormat);
-    if (legacyFormatted) return legacyFormatted;
-
-    const { locale, options } = normalizeIntlArgs(localeOrFormat, styleOrOptions);
-
-    try {
-      return getFormatter(locale, options).format(date);
-    } catch {
-      return date.toISOString();
+export default function (config) {
+  config.setNunjucksEnvironmentOptions({ autoescape: true });
+  // Only developer-authored templates/Markdown use | safe. Never apply it to submitted data.
+  config.addPassthroughCopy({ 'src/assets/public': 'assets/public' });
+  config.addWatchTarget('src/assets/css/');
+  config.addWatchTarget('src/assets/js/');
+  config.addWatchTarget('lib/');
+  let assets = {};
+  config.addFilter('asset', name => {
+    if (!assets[name]) throw new Error(`Unknown compiled asset: ${name}`);
+    return assets[name];
+  });
+  config.addFilter('jsonForHtml', jsonForHtml);
+  config.addFilter('absoluteUrl', (value, base) => base ? new URL(value, base).href : '');
+  config.addFilter('date', (value, locale = 'en-CA', style = 'medium') => {
+    const date = value === 'now' ? new Date() : new Date(value);
+    if (Number.isNaN(date.getTime())) throw new Error('Invalid content date');
+    if (locale === 'yyyy-LL-dd') return date.toISOString().slice(0,10);
+    if (['short','medium','long','full'].includes(locale)) { style = locale; locale = 'en-CA'; }
+    return new Intl.DateTimeFormat(locale, { dateStyle: style, timeZone: 'UTC' }).format(date);
+  });
+  config.addFilter('w3cDate', value => new Date(value).toISOString());
+  config.addFilter('publicPages', pages => pages.filter(p => p.url && p.url.endsWith('/') && !p.data.noindex && !p.data.placeholder && !p.data.draft && !p.data.eleventyExcludeFromCollections));
+  config.addTransform('secure-new-tabs', (content, outputPath) => {
+    if (!outputPath?.endsWith('.html')) return content;
+    const $ = load(content);
+    $('a[target="_blank"]').each((_, link) => {
+      const rel = new Set(($(link).attr('rel') || '').split(/\s+/).filter(Boolean));
+      rel.add('noopener'); rel.add('noreferrer');
+      $(link).attr('rel', [...rel].join(' '));
+    });
+    return $.html();
+  });
+  config.on('eleventy.before', async () => {
+    const settings = siteConfig();
+    await mkdir('_site/assets/compiled', { recursive: true });
+    const css = await postcss([tailwind()]).process(await readFile('src/assets/css/tailwind.css', 'utf8'), { from: 'src/assets/css/tailwind.css' });
+    assets = {};
+    for (const [name, content, ext] of [ ['css', css.css, 'css'], ['js', await readFile('src/assets/js/main.js','utf8'), 'js'] ]) {
+      const hash = createHash('sha256').update(content).digest('hex').slice(0,16);
+      assets[name] = `/assets/compiled/main-${hash}.${ext}`;
+      await writeFile(`_site${assets[name]}`, content);
+    }
+    const lines = ['/*', ...Object.entries(SECURITY_HEADERS).map(([k,v]) => `  ${k}: ${v}`), '  Cache-Control: public, max-age=0, must-revalidate'];
+    if (!settings.indexable) lines.push('  X-Robots-Tag: noindex');
+    lines.push('/assets/compiled/*', '  Cache-Control: public, max-age=31536000, immutable', '/assets/images/optimized/*', '  Cache-Control: public, max-age=31536000, immutable');
+    for (const route of ['/health/', '/health/index.html', '/thanks/', '/form-error/', '/__forms.html']) lines.push(route, '  Cache-Control: no-store', '  X-Robots-Tag: noindex');
+    await writeFile('_site/_headers', lines.join('\n')+'\n');
+    // Netlify scans this before serving; a forced 404 blocks public access on every deploy URL.
+    if (settings.contactEnabled) {
+      await writeFile('_site/__forms.html', `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Form registration</title></head><body><form name="${process.env.CONTACT_FORM_NAME}" method="POST" data-netlify="true"><input name="name"><input name="email"><textarea name="message"></textarea></form></body></html>`);
     }
   });
-
-  // Markdown image defaults: lazy-load and async decode to improve performance
-  eleventyConfig.amendLibrary("md", (mdLib) => {
-    const defaultImageRule = mdLib.renderer.rules.image;
-    mdLib.renderer.rules.image = (tokens, idx, options, env, self) => {
-      const token = tokens[idx];
-      setTokenAttr(token, "loading", "lazy");
-      setTokenAttr(token, "decoding", "async");
-      return (defaultImageRule || self.renderToken)(tokens, idx, options);
-    };
+  config.addNunjucksAsyncShortcode('img', async (src, alt, sizes = '100vw', widths = [320,640,960,1280,1920], formats = ['avif','webp','jpeg'], className = '', priority = false) => {
+    if (typeof alt !== 'string') throw new Error('Images require explicit alt text; use an empty string for decoration.');
+    const full = path.resolve('src', String(src).replace(/^\//,''));
+    if (!full.startsWith(path.resolve('src/assets/images')+path.sep)) throw new Error('img shortcode accepts local source images only.');
+    const metadata = await Image(full, { widths, formats, urlPath:'/assets/images/optimized/', outputDir:'_site/assets/images/optimized' });
+    return Image.generateHTML(metadata, { alt, sizes, class: className, loading: priority ? 'eager' : 'lazy', decoding:'async', ...(priority ? { fetchpriority:'high' } : {}) });
   });
-
-  // Responsive image shortcode using @11ty/eleventy-img
-  // Usage in templates/Markdown (Nunjucks enabled):
-  //   {% img '/assets/images/example.jpg', 'Alt text', '(min-width: 768px) 720px, 100vw' %}
-  eleventyConfig.addNunjucksAsyncShortcode(
-    "img",
-    async function imgShortcode(
-      src,
-      alt = "",
-      sizes = "(min-width: 768px) 720px, 100vw",
-      widths = [320, 640, 960, 1280, 1920],
-      formats = ["avif", "webp", "jpeg"],
-      className = ""
-    ) {
-      if (USE_CLOUDINARY && CLOUDINARY_CLOUD_NAME) {
-        return generateCloudinaryPicture({
-          publicId: src,
-          alt,
-          sizes,
-          widths,
-          formats,
-          className,
-        });
-      }
-
-      if (USE_CLOUDINARY && !CLOUDINARY_CLOUD_NAME) {
-        console.warn(
-          "[img shortcode] USE_CLOUDINARY is true but CLOUDINARY_CLOUD_NAME is not set. Falling back to local images."
-        );
-      }
-
-      const inputDir = "src"; // matches dir.input below
-      const rel = String(src).replace(/^\//, "");
-      const fullSrc = path.join(inputDir, rel);
-
-      const metadata = await Image(fullSrc, {
-        widths,
-        formats,
-        urlPath: "/assets/images/",
-        outputDir: path.join("_site", "assets", "images"),
-        filenameFormat: function (id, source, width, format) {
-          const name = path.basename(source, path.extname(source));
-          return `${name}-${width}.${format}`;
-        },
-      });
-
-      const imageAttributes = {
-        alt,
-        sizes,
-        loading: "lazy",
-        decoding: "async",
-        class: className,
-      };
-      return Image.generateHTML(metadata, imageAttributes);
-    }
-  );
-
-  // Pre-generate a default social image at build time (JPEG 1200px wide)
-  eleventyConfig.on("eleventy.before", async () => {
-    const source = path.join("src", "assets", "images", "social-share.svg");
-    try {
-      await Image(source, {
-        widths: [1200],
-        formats: ["jpeg"],
-        urlPath: "/assets/images/",
-        outputDir: path.join("_site", "assets", "images"),
-        filenameFormat: () => "social-share.jpg",
-      });
-    } catch (e) {
-      // If source is missing, skip silently; user can replace later
+  // Catch accidental secret exposure outside the blocked registration document.
+  config.on('eleventy.after', async () => {
+    const secret = process.env.CONTACT_FORM_NAME;
+    if (!secret) return;
+    for (const file of globSync('_site/**/*.{html,xml,txt,js,css,json}')) {
+      if (file.replaceAll('\\','/') === '_site/__forms.html') continue;
+      if ((await readFile(file,'utf8')).includes(secret)) throw new Error('Contact registration name exposed in public output.');
     }
   });
-
-  // Helpers
-  eleventyConfig.addFilter("absoluteUrl", (path, base) => {
-    try {
-      if (!path) return base || "";
-      if (!base) return path;
-      return new URL(path, base).toString();
-    } catch {
-      return path;
-    }
-  });
-
-  eleventyConfig.addFilter("w3cDate", (value) => {
-    const d = value instanceof Date ? value : new Date(value);
-    if (isNaN(d)) return "";
-    return d.toISOString();
-  });
-
-  // Transform: add rel="noopener noreferrer" to external links that open in a new tab
-  eleventyConfig.addTransform("secure-external-links", (content, outputPath) => {
-    if (outputPath && outputPath.endsWith(".html")) {
-      return hardenExternalLinks(content);
-    }
-    return content;
-  });
-
-  return {
-    templateFormats: ["md", "html"],
-    markdownTemplateEngine: "njk",
-    htmlTemplateEngine: "njk",
-    dataTemplateEngine: "njk",
-    dir: {
-      input: "src",
-      includes: "_includes",
-      data: "_data",
-      output: "_site"
-    }
-  };
-};
-
-function coerceDate(rawValue) {
-  if (rawValue === undefined || rawValue === null || rawValue === "" || rawValue === "now") {
-    return new Date();
-  }
-
-  if (rawValue instanceof Date) {
-    const copy = new Date(rawValue.getTime());
-    return isNaN(copy) ? null : copy;
-  }
-
-  const parsed = new Date(rawValue);
-  return isNaN(parsed) ? null : parsed;
-}
-
-function formatLegacyDate(date, maybeToken) {
-  if (typeof maybeToken !== "string") return null;
-  const formatter = LEGACY_DATE_FORMATTERS[maybeToken];
-  return formatter ? formatter(date) : null;
-}
-
-function normalizeIntlArgs(localeOrFormat, styleOrOptions) {
-  const locale =
-    typeof localeOrFormat === "string" && localeOrFormat && localeOrFormat !== "auto"
-      ? localeOrFormat
-      : undefined;
-
-  if (typeof styleOrOptions === "string" && styleOrOptions) {
-    return { locale, options: { dateStyle: styleOrOptions } };
-  }
-
-  if (styleOrOptions && typeof styleOrOptions === "object") {
-    return { locale, options: { ...styleOrOptions } };
-  }
-
-  return { locale, options: { ...DEFAULT_DATE_STYLE } };
-}
-
-function getFormatter(locale, options) {
-  const cacheKey = `${locale || "system"}|${JSON.stringify(options)}`;
-  if (!formatterCache.has(cacheKey)) {
-    formatterCache.set(cacheKey, new Intl.DateTimeFormat(locale, options));
-  }
-  return formatterCache.get(cacheKey);
-}
-
-function setTokenAttr(token, name, value) {
-  const idx = token.attrIndex(name);
-  if (idx >= 0) {
-    token.attrs[idx][1] = value;
-  } else {
-    token.attrPush([name, value]);
-  }
-}
-
-function hardenExternalLinks(html) {
-  TARGET_BLANK_REGEX.lastIndex = 0;
-  return html.replace(TARGET_BLANK_REGEX, (match) => {
-    REL_ATTRIBUTE_REGEX.lastIndex = 0;
-    const relMatch = REL_ATTRIBUTE_REGEX.exec(match);
-    if (!relMatch) {
-      return match.replace(/<a\b/i, '<a rel="noopener noreferrer"');
-    }
-
-    const [, quote, relValue] = relMatch;
-    const mergedRel = Array.from(
-      new Set(
-        relValue
-          .split(/\s+/)
-          .filter(Boolean)
-          .concat(["noopener", "noreferrer"])
-      )
-    ).join(" ");
-
-    REL_ATTRIBUTE_REGEX.lastIndex = 0;
-    return match.replace(REL_ATTRIBUTE_REGEX, ` rel=${quote}${mergedRel}${quote}`);
-  });
-}
-
-function normalizeCloudinaryPublicId(publicId) {
-  if (!publicId) return "";
-  return String(publicId).replace(/^\//, "");
-}
-
-function buildCloudinaryUrl({ publicId, width, format }) {
-  const cleanId = normalizeCloudinaryPublicId(publicId);
-  const transforms = [
-    "q_auto",
-    width ? `w_${width}` : null,
-    format ? `f_${format}` : "f_auto",
-  ]
-    .filter(Boolean)
-    .join(",");
-
-  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${transforms}/${cleanId}`;
-}
-
-function generateCloudinaryPicture({ publicId, alt, sizes, widths, formats, className }) {
-  const cleanAlt = alt || "";
-  const formatList = Array.isArray(formats) && formats.length > 0 ? formats : ["auto"];
-  const widthList = Array.isArray(widths) && widths.length > 0 ? widths : [640, 960, 1280];
-
-  const sources = formatList
-    .filter((format) => format !== "jpeg")
-    .map((format) => {
-      const srcset = widthList
-        .map((width) => `${buildCloudinaryUrl({ publicId, width, format })} ${width}w`)
-        .join(", ");
-      return `<source type="image/${format}" srcset="${srcset}" sizes="${sizes}">`;
-    })
-    .join("");
-
-  const fallbackSrcset = widthList
-    .map((width) => `${buildCloudinaryUrl({ publicId, width, format: "jpeg" })} ${width}w`)
-    .join(", ");
-  const fallbackSrc = buildCloudinaryUrl({ publicId, width: widthList[0], format: "jpeg" });
-  const classAttr = className ? ` class="${className}"` : "";
-
-  return `<picture>${sources}<img${classAttr} src="${fallbackSrc}" srcset="${fallbackSrcset}" sizes="${sizes}" alt="${escapeHtml(cleanAlt)}" loading="lazy" decoding="async"></picture>`;
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return { templateFormats:['md','html','njk'], markdownTemplateEngine:'njk', htmlTemplateEngine:'njk', dir:{input:'src',includes:'_includes',data:'_data',output:'_site'} };
 }

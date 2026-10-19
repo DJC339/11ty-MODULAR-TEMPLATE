@@ -1,7 +1,7 @@
-module.exports = [
-  { title: "Home", url: "/" },
-  { title: "Blog", url: "/blog/" },
-  { title: "About", url: "/about/" },
-  { title: "Services", url: "/services/" }
+export default [
+  { title: 'Home', url: '/' },
+  { title: 'About', url: '/about/' },
+  { title: 'Services', url: '/services/' },
+  { title: 'Blog', url: '/blog/' },
+  { title: 'Contact', url: '/contact/' },
 ];
-

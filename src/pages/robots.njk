@@ -1,10 +1,8 @@
 ---
 permalink: /robots.txt
-layout: null
+layout: false
 eleventyExcludeFromCollections: true
 ---
 User-agent: *
 Allow: /
-
-Sitemap: {{ '/sitemap.xml' | absoluteUrl(site.url) }}
-
+{% if site.indexable %}Sitemap: {{ site.url }}/sitemap.xml{% endif %}

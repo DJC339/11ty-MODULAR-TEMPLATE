@@ -1,18 +1,9 @@
 ---
 permalink: /sitemap.xml
-layout: null
+layout: false
 eleventyExcludeFromCollections: true
 ---
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-{% for item in collections.all %}
-  {# skip 404 and non-public #}
-  {% if item.data.permalink and item.data.permalink != '/404.html' %}
-  <url>
-    <loc>{{ item.url | absoluteUrl(site.url) }}</loc>
-    {% if item.date %}<lastmod>{{ item.date | w3cDate }}</lastmod>{% endif %}
-  </url>
-  {% endif %}
-{% endfor %}
+{% if site.indexable %}{% for item in collections.all | publicPages %}<url><loc>{{ item.url | absoluteUrl(site.url) }}</loc>{% if item.data.lastUpdated %}<lastmod>{{ item.data.lastUpdated | w3cDate }}</lastmod>{% endif %}</url>{% endfor %}{% endif %}
 </urlset>
-

@@ -1,26 +1,30 @@
 {
   "name": "11ty-modular-template",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Modular Eleventy starter with layouts, components, and assets.",
+  "type": "module",
+  "description": "CFD static website starter with tested accessibility, security and metadata defaults.",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "start": "npm run dev",
-    "dev": "concurrently \"npm:dev:eleventy\" \"npm:dev:css\"",
-    "dev:eleventy": "eleventy --serve",
-    "dev:css": "tailwindcss -i ./src/assets/css/tailwind.css -o ./src/assets/css/main.css --watch",
-    "build": "npm run build:css && eleventy",
-    "build:css": "tailwindcss -i ./src/assets/css/tailwind.css -o ./src/assets/css/main.css --minify"
-  },
-  "engines": {
-    "node": ">=18"
+    "dev": "eleventy --serve",
+    "build": "node scripts/clean.mjs && eleventy",
+    "test": "npm run test:node && npm run build && npm run test:browser",
+    "test:node": "node --test tests/unit/*.test.mjs tests/build/*.test.mjs",
+    "test:browser": "playwright test",
+    "test:install": "playwright install chromium",
+    "test:hosted": "node scripts/check-hosted.mjs"
   },
   "devDependencies": {
-    "@11ty/eleventy": "^2.0.1",
-    "@11ty/eleventy-img": "^3.0.1",
-    "@tailwindcss/typography": "0.5.19",
-    "autoprefixer": "10.4.22",
-    "concurrently": "9.2.1",
-    "postcss": "8.5.6",
-    "tailwindcss": "3.4.13"
+    "@11ty/eleventy": "3.1.7",
+    "@11ty/eleventy-img": "7.0.0",
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "cheerio": "1.2.0",
+    "postcss": "8.5.31",
+    "tailwindcss": "4.3.3"
   }
 }

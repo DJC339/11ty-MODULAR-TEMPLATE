@@ -1,171 +1,90 @@
-# 11ty Modular Template
+# CFD Eleventy modular template
 
-An opinionated Eleventy (11ty) starter with a simple, modular structure: layouts, components, global data, security defaults, and Netlify-friendly configuration.
+A static business website foundation using Eleventy 3, Nunjucks, Tailwind 4 and Node 24 LTS. Shared layouts, navigation, metadata, responsive image processing, an independent health page and repeatable checks are included. Contact processing and blog content are optional.
 
-## Features
-- Eleventy 2.x with HTML + Markdown templates using Nunjucks tags
-- Modular includes: base layout, header, footer, partials
-- Global data (`src/_data`) for site metadata and navigation
-- Blog collection via Markdown files under `src/blog/`
-- Internationalized date filter using `Intl.DateTimeFormat`
-- Pages under `src/pages/` with clean permalinks
-- 404 page (`/404.html`)
-- SEO: canonical URLs, Open Graph + Twitter Card tags, sitemap.xml, robots.txt
-- Images: responsive `<picture>` via `{% img %}` shortcode, Markdown images lazy/async
-- Cloudinary-first image pipeline with local fallback via `USE_CLOUDINARY=false`
-- Tailwind CSS 3 + Autoprefixer with dedicated dev/build scripts (typography plugin included)
-- Netlify config (`netlify.toml`) with cache and strong security headers
-- External link hardening (`rel="noopener noreferrer"` for `target="_blank"`)
+## Install and run
 
-## Project Structure
-```text
-/
-|-- .eleventy.js               # Eleventy configuration (engines, filters, shortcodes, transforms)
-|-- netlify.toml               # Netlify build, headers (cache + security)
-|-- package.json               # Scripts + dev dependencies
-|-- package-lock.json
-|-- .npmrc                     # Pin exact versions
-|-- .github/dependabot.yml     # Weekly dependency PRs (GitHub)
-|-- tailwind.config.js         # Tailwind theme + content paths
-|-- postcss.config.js          # Tailwind + Autoprefixer
-|-- src/
-|   |-- _data/
-|   |   |-- site.json          # Site title/description/author/url/language/twitter/image
-|   |   |-- navigation.js      # Header nav links
-|   |-- _includes/
-|   |   |-- layouts/
-|   |   |   |-- base.html      # Base layout shell
-|   |   |   |-- post.html      # Blog post layout
-|   |   |-- components/
-|   |   |   |-- basehead.html  # <head> content + SEO
-|   |   |   |-- header.html    # Site header + nav
-|   |   |   |-- footer.html    # Site footer
-|   |   |-- partials/
-|   |       |-- social-links.html
-|   |-- assets/
-|   |   |-- css/
-|   |   |   |-- tailwind.css   # Source (includes @tailwind directives + custom layers)
-|   |   |   |-- main.css       # Generated output (copied to /assets/css/main.css)
-|   |   |-- js/
-|   |   |-- images/
-|   |-- blog/
-|   |   |-- post-1.md
-|   |   |-- post-2.md
-|   |-- pages/
-|       |-- index.html         # /
-|       |-- about.html         # /about/
-|       |-- contact.html       # /contact/
-|       |-- services.html      # /services/
-|       |-- blog.html          # /blog/ (list of posts)
-|       |-- 404.html           # /404.html
-|       |-- robots.txt         # /robots.txt
-|       |-- sitemap.xml.html   # /sitemap.xml
-|-- .gitignore
+```sh
+npm ci
+npm run dev
+npm run build
+npm run test:install
+npm test
 ```
-## Getting Started
-- Install: `npm install`
-- Configure environment: copy `.env.example` to `.env` and set `CLOUDINARY_CLOUD_NAME`
-- Develop: `npm start` (or `npm run dev`) - runs Eleventy serve alongside the Tailwind watcher
-- Build: `npm run build` - runs `build:css` before Eleventy and outputs to `_site/`
-- CSS only: `npm run dev:css` (watch) or `npm run build:css` (single build)
-## Eleventy Configuration Highlights (`.eleventy.js`)
-- Template engines: `htmlTemplateEngine: 'njk'`, `markdownTemplateEngine: 'njk'`
-- Directories: `input: 'src'`, `includes: '_includes'`, `data: '_data'`, `output: '_site'`
-- Passthrough: copies `src/assets` to `/assets`
-- Date filter: `date(value, localeOrFormat = 'auto', styleOrOptions)`
-  - Uses `Intl.DateTimeFormat` by default
-  - Back-compat tokens: `yyyy-LL-dd`, `yyyy-LL`, `LL/dd/yyyy`
-  - Examples:
-    - `{{ date | date() }}` → system locale, medium date
-    - `{{ date | date('en-GB','long') }}` → en-GB, long date
-    - `{{ date | date('en-US', { dateStyle: 'medium', timeStyle: 'short' }) }}`
-- Responsive images: `{% img src, alt, sizes %}`
-  - Default: Cloudinary URLs with AVIF/WebP/JPEG sources at multiple widths
-  - Local fallback: set `USE_CLOUDINARY=false` to use `@11ty/eleventy-img`
-  - Example (Cloudinary public ID): `{% img 'site/hero', 'Alt text', '(min-width: 768px) 720px, 100vw' %}`
-  - Example (local file): `{% img '/assets/images/example.jpg', 'Alt text', '(min-width: 768px) 720px, 100vw' %}`
-- Markdown images: automatically get `loading="lazy" decoding="async"`
-- Security transform: adds `rel="noopener noreferrer"` to links with `target="_blank"`
-- Filters: `absoluteUrl(path, base)`, `w3cDate(value)` used by SEO and sitemap
 
-## SEO
-- Base head (`components/basehead.html`) includes:
-  - Title and description (page front matter overrides global)
-  - Canonical URL
-  - Open Graph: site_name, title, description, url, type (article for blog), image
-  - Twitter Card: `summary_large_image`, site handle, title, description, image
-- Global settings in `src/_data/site.json`:
-  - `title`, `description`, `author`, `url`, `language`, `twitter`, `image` (full URL, optional), `theme` (`dark` or `light`)
-- Extras:
-  - `src/pages/sitemap.xml.html` → `/sitemap.xml`
-  - `src/pages/robots.txt` → `/robots.txt` with sitemap pointer
+The development site runs on port 8080; browser checks use 8181 and fail if another process occupies that port. `npm run test:node` runs validation and generated-output tests. `npm run test:browser` builds a controlled contact-enabled fixture and runs Chromium/axe. Browser tests use an injected upstream that stores nothing and sends no mail. `npm run build` afterwards restores your normal configured output. CI runs checks for pull requests and pushes to main; it does not deploy.
 
-## Accessibility & Responsive Defaults
-- Skip link to `#main-content` and focus-visible styles
-- Fluid typography and responsive spacing
-- Nav wraps on small screens
-- Reduced-motion preferences enforced in `src/assets/css/tailwind.css`
+Use a supported Node 24 release consistently with `.nvmrc`, package engines, CI and Netlify. Updates are deliberate, reviewed changes. Dependencies and the npm lockfile are committed. Do not use forced audit fixes or suppress advisories to manufacture a clean result. Native image/CSS dependencies need their installation support; do not blindly disable every install script without testing the build.
 
-## Netlify
-- `netlify.toml` sets:
-  - Build command: `npm run build`
-  - Publish dir: `_site`
-  - Node version: `18`
-  - Cache headers:
-    - `/assets/*`: `public, max-age=31536000, immutable`
-    - `/*`: `public, max-age=0, must-revalidate`
-  - Security headers:
-    - CSP (default-src 'self'; images allow https and data; no plugins; frame-ancestors self; upgrade-insecure-requests)
-    - Referrer-Policy, X-Content-Type-Options, X-Frame-Options, Permissions-Policy, COOP/CORP, HSTS
+## Configure a new client project
 
-## Using This as a Template
-- On GitHub, enable “Template repository” and click “Use this template”
-- Or use degit:
-  - `npx degit <your-username>/11ty-modular-template my-new-site`
-  - `cd my-new-site && npm install && npm start`
+1. Edit `src/_data/site.js`: real business name, description, locale, contact details and theme. Never copy another client's details or claims.
+2. Replace page content and descriptions. Remove `placeholder: true` only when that page is approved. Delete the optional blog directory, blog page, post layout and navigation entry for sites without a blog.
+3. Add approved images under `src/assets/images/`. This source directory is **not** copied wholesale to the public output. Put only deliberately public assets such as favicons or self-hosted licensed fonts under `src/assets/public/`.
+4. Set `SITE_URL` to the final HTTPS origin. `.env.example` is a variable reference, not an auto-loaded file. Set variables in your shell or Netlify UI; never commit secrets.
+5. Indexing remains off unless `CONTEXT=production` AND `ALLOW_INDEXING=true`. Indexable builds require a real `SITE_URL`. Previews remain noindex even if the production opt-in is inherited. Placeholder/draft/noindex pages stay out of the sitemap.
+6. Complete [CLIENT_CHECKLIST.md](CLIENT_CHECKLIST.md) and choose whether to enable contact processing.
 
-## Things To Do After Cloning
-1) Update site metadata
-   - `src/_data/site.json` — title, description, author, url, language, twitter, image
-2) Tweak navigation
-   - `src/_data/navigation.js` — add/remove links (e.g., Contact)
-3) Branding and SEO
-  - Update tokens/utilities inside `src/assets/css/tailwind.css` (or extend `tailwind.config.js`)
-   - Add favicons and social image to `src/assets/images`
-   - Adjust OG/Twitter tags in `components/basehead.html` as needed
-4) Social links
-   - Edit `src/_includes/partials/social-links.html`
-5) Content
-   - Replace pages in `src/pages/`
-   - Replace or remove sample posts in `src/blog/`
-6) Netlify
-   - Connect repo, configure custom domain, HTTPS
-   - Adjust cache headers or CSP in `netlify.toml` if you add external assets/scripts
-7) Asset hashing (recommended for production)
-   - With long cache headers on `/assets/*`, add hashing to avoid stale files
-   - Options:
-     - Eleventy plugin (e.g., `eleventy-plugin-rev`)
-     - Bundler (Vite/Rollup) to emit hashed filenames
-     - Custom: generate hash map and reference via data (see outline below)
-   - Minimal custom outline:
-     1. Hash files in `src/assets` to `/assets/`
-     2. Emit map original → hashed (e.g., `_data/assets.json`)
-     3. Use map in `basehead.html` for CSS/JS references
-8) Dependency hygiene
-   - `.npmrc` pins exact versions; commit `package-lock.json`
-   - `.github/dependabot.yml` opens weekly update PRs (on GitHub)
-9) Analytics/consent (optional)
-   - Add scripts in `components/basehead.html` or end of `base.html`
+## Edit locations
 
-## Scripts
-- `npm start` / `npm run dev` - run Eleventy serve + Tailwind watch in parallel
-- `npm run dev:eleventy` - Eleventy dev server only
-- `npm run dev:css` - Tailwind watcher only
-- `npm run build` - build CSS then run Eleventy (outputs `_site/`)
-- `npm run build:css` - single Tailwind build (minified)
-## Notes
-- `package.json` has `"private": true` to avoid accidental npm publishing; repo visibility is independent (GitHub can be public)
-- This is a static template; no server-side code
+| Content or behaviour | Location |
+|---|---|
+| Branding, contact, SEO defaults, optional schema | `src/_data/site.js` |
+| Menu and footer destinations | `src/_data/navigation.js` |
+| Pages and optional blog posts | `src/pages/`, `src/blog/` |
+| Shared page and article layouts | `src/_includes/layouts/` |
+| Header, footer and metadata | `src/_includes/components/` |
+| Design styles and local navigation script | `src/assets/css/tailwind.css`, `src/assets/js/main.js` |
+| Contact rules and handler | `lib/contact-rules.mjs`, `netlify/functions/contact.mjs` |
+| Security headers | `lib/security.mjs`; generated `_site/_headers` |
 
+Tailwind uses its official PostCSS integration in the Eleventy build hook. Template/CSS changes rebuild CSS on the same watch cycle; no separate CLI/watch process is needed. The typography plugin was removed because its selector-parser dependency had an advisory; basic prose styles are local. Tailwind 4's browser baseline is Safari 16.4+, Chrome 111+ and Firefox 128+. For clients requiring older browsers, choose and test an explicit compatibility strategy.
 
+## Images and performance
 
+```njk
+{% img '/assets/images/hero.jpg', 'Describe the meaningful scene', '100vw', [640,960,1440,1920], ['avif','webp','jpeg'], 'hero-image', true %}
+{% img '/assets/images/team.jpg', 'Approved team description', '(min-width: 768px) 50vw, 100vw' %}
+```
+
+The final argument marks an above-the-fold priority image: eager loading and high fetch priority. Other images lazy-load. Explicit alt is required; `''` marks decoration. Width/height and responsive candidates are generated. Image transforms strip source metadata by default; originals remain outside the deployed output. Do not use this shortcode for remote URLs or Cloudinary IDs. Previous Cloudinary code and environment settings are removed.
+
+CSS, JS and optimized image filenames are hashed; only their output directories get immutable caching. Stable public files and HTML revalidate. No third-party scripts/fonts are included. Self-host licensed fonts with `font-display: swap`, limited weights and documented licences when required; system fonts are the base default. Measure real page LCP/CLS/INP and transfer sizes after content is supplied; passing the template suite is not a Lighthouse score or performance guarantee.
+
+## SEO and structured data
+
+Titles, descriptions, canonical URLs, Open Graph and social image fields live in the shared head. Set an approved raster social image and useful alt text; never assume the sample SVG is an appropriate sharing card. Canonicals use the production origin; previews still carry noindex. Sitemap entries use canonical routes and optional explicit `lastUpdated` dates rather than inventing modification dates on every build. `robots.txt` allows crawling so search engines can read noindex; noindex is not access control.
+
+`site.business` defaults to null. Set it to a verified JSON-LD object (including `@context`, appropriate `@type`, `name`, canonical `url` and stable `@id`) only once details are confirmed. Add real contact/service-area information where appropriate; do not invent street addresses, review ratings or credentials. The JSON serializer escapes script-closing characters. Optional articles can add verified author/date/article schema through a dedicated component when needed. Keep visible content and schema consistent. Launch includes Search Console/Bing verification, sitemap submission and redirect checks; those account tasks are not automated here.
+
+## Optional Netlify contact form
+
+Contact is disabled by default. When enabled it requires Netlify Functions and Netlify Forms. Moving to another host requires a replacement delivery adapter and hosted verification; this is not portable static HTML alone.
+
+Set these through Netlify UI for each trusted deploy context:
+
+- `ENABLE_CONTACT=true` in Builds **and** Functions.
+- `CONTACT_FORM_NAME`: generate a distinct random value using `openssl rand -hex 16`; make it available to Builds **and** Functions. It acts as a bearer secret for the storage form. Never reuse it across projects; use separate preview/production values and notifications.
+- `SITE_URL` in Builds and Functions; Netlify's injected `DEPLOY_URL`, `URL` and `DEPLOY_PRIME_URL` supply trusted deployment origins.
+
+Enable form detection. The generated `__forms.html` registers the storage form; a forced redirect makes that document return 404 on every public deployment URL. Only the server function knows the form name. Do not expose registration artifacts, build output or their logs in public CI artifacts. Restrict preview secrets for untrusted fork builds; use non-sensitive test fixtures in CI.
+
+This design depends on keeping the name confidential. It does not make Netlify's direct submission endpoint enforce the validation rules. If the name leaks, direct submissions can bypass the function: rotate it, remove obsolete registered forms and re-verify. The blocked registration path, detection, submission processing and name confidentiality are **hosted verification requirements**, not guarantees from local tests.
+
+Netlify secret scanning may flag the intentional registration artifact. Do not disable scanning globally. If required, document a narrowly scoped exception for this registration key after verifying its blocked location; keep output leakage tests and scanning for other secrets active.
+
+The handler uses POST, a streamed 16 KiB body limit, exact fields, duplicate rejection, normalized Unicode text, length limits, email shape checks, control/newline checks, a honeypot, same-site browser checks and Netlify's per-IP/domain rate limit (5 requests/60 seconds). Origin checks are not bot authentication. Rate enforcement may lag and does not prevent distributed abuse. No user input is echoed in responses or logged. Only validated fields are forwarded to a trusted Netlify-injected HTTPS deployment URL. No request-header fallback, automatic retries, file upload, database, login or CAPTCHA is included.
+
+Success means the forwarding response was accepted, not that an email reached an inbox. A timeout can occur after storage; the error page describes uncertain receipt. Do not claim failed requests always store nothing. Logs report outcomes without personal data; alerting and submission-retention policy must be arranged for each client.
+
+## Monitoring and hosting checks
+
+`/health/` returns 200 and visible `Site OK` without layouts, assets or external dependencies. It is noindex, excluded from navigation/sitemap and has `Cache-Control: no-store`. It verifies static reachability only.
+
+```sh
+TEST_BASE_URL=https://your-deployed-site.netlify.app npm run test:hosted
+```
+
+The hosted checker is read-only. It checks status, basic headers, blocked registration, health and hashed CSS caching. It does not send messages, test notifications, prove spam filtering or enforce rate rules. Follow the separate launch checklist for those checks. Netlify static headers do not cover function responses; the function sets its own. HSTS covers the configured host without automatically asserting that all subdomains are HTTPS-ready. Strict CSP allows local assets and inert JSON-LD; integrations need narrow, documented exceptions. No CSP collector is included because receiving untrusted reports introduces another endpoint and logging obligation.
+
+See [docs/STANDARDS.md](docs/STANDARDS.md) for reference provenance, scope and verification limitations.
